@@ -5,7 +5,7 @@ import java.awt.event.*;
 
 public class StartScreen extends JPanel {
 
-    private static final String IMAGE_PATH = "C:\\\\Users\\\\Zoro\\\\Desktop\\\\teste-main\\\\Imagem\\\\PLAY.jpg";
+    private static final String IMAGE_PATH = "C:\\Users\\3001032\\Downloads\\Asteroids_Futurama-main\\Asteroids_Futurama-main\\Imagem\\PLAY.jpg";
     private final JFrame frame;
     private final Image bg;
 

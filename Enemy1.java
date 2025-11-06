@@ -20,7 +20,7 @@ public class Enemy1 {
     }
 
     private void load() {
-        ImageIcon referencia = new ImageIcon("C:\\Users\\Zoro\\Desktop\\teste-main\\Imagem\\NAVE_INIMIGO.png");
+        ImageIcon referencia = new ImageIcon("C:\\Users\\3001032\\Downloads\\Asteroids_Futurama-main\\Asteroids_Futurama-main\\Imagem\\NAVE_INIMIGO.png");
         imagem  = referencia.getImage();
         largura = imagem.getWidth(null);
         altura  = imagem.getHeight(null);

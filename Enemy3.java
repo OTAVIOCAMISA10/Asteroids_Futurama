@@ -19,7 +19,7 @@ public class Enemy3 {
 
     private void load() {
         // Carrega a imagem da rocha (ajuste o caminho conforme necessário)
-        ImageIcon referencia = new ImageIcon("C:\\Users\\Zoro\\Desktop\\teste-main\\Imagem\\ROCHA.png");
+        ImageIcon referencia = new ImageIcon("C:\\Users\\3001032\\Downloads\\Asteroids_Futurama-main\\Asteroids_Futurama-main\\Imagem\\ROCHA.png");
         imagem = referencia.getImage();
         largura = imagem.getWidth(null);
         altura = imagem.getHeight(null);
