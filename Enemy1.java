@@ -47,4 +47,14 @@ public class Enemy1 implements Enemy {
     public int getX() { return x; }
     public int getY() { return y; }
     public Image getImagem() { return imagem; }
+
+    public int getLargura() {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'getLargura'");
+    }
+
+    public int getAltura() {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'getAltura'");
+    }
 }

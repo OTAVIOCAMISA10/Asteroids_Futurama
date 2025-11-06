@@ -56,4 +56,9 @@ public class Enemy3 implements Enemy {
     public Image getImagem() {
         return imagem;
     }
+
+    public int getLargura() {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'getLargura'");
+    }
 }
