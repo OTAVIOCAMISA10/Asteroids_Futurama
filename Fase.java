@@ -12,7 +12,7 @@ import java.awt.event.KeyEvent;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
-
+import java.awt.Toolkit;
 import javax.swing.ImageIcon;
 import javax.swing.JPanel;
 import javax.swing.Timer;
@@ -46,6 +46,33 @@ public class Fase extends JPanel implements ActionListener {
     private long ticks = 0;
     private int kills  = 0;
 
+    // Rede Neural para controlar o player
+    private RedeNeural nn;
+    private static final int NUM_INPUTS = 8;  // player x,y + closest enemy1 x,y + closest enemy2 x,y + closest enemy3 x,y
+    private static final int NUM_OUTPUTS = 3; // dx, dy, fire
+    private static final int HIDDEN_LAYERS = 1;
+    private static final int HIDDEN_NEURONS = 10;
+
+    // === Suavização / controle fino da NN ===
+    private double[] nnEma = new double[] {0, 0, 0}; // dx, dy, fire filtrados (EMA)
+    private static final double EMA_ALPHA_MOVE = 0.25; // suavização de movimento
+    private static final double EMA_ALPHA_FIRE = 0.15; // suavização do gatilho
+
+    // Velocidades suavizadas (float p/ precisão) e limites
+    private float vx = 0f, vy = 0f;
+    private static final float MAX_SPEED = 3.0f;     // teto de velocidade (igual ao antes)
+    private static final float ACCEL_STEP = 0.5f;    // aceleração máx. por tick (px/tick^2)
+
+    // Cooldown simples para tiro (evita “metralhar” por ruído)
+    private int shootCooldown = 0;
+    private static final int SHOOT_COOLDOWN_TICKS = 6; // ~100ms a 60fps
+
+    // <<< ADIÇÃO existente >>>
+    private RedeNeural externalNN; // Para treinamento
+
+    // ===================== Construtores =====================
+
+    // Construtor padrão: rede neural interna
     public Fase() {
         setPreferredSize(new Dimension(LARGURA, ALTURA));
         setFocusable(true);
@@ -55,6 +82,31 @@ public class Fase extends JPanel implements ActionListener {
         fundo = referencia.getImage();
 
         addKeyListener(new TecladoAdapter());
+
+        // Inicializa a rede neural interna
+        nn = new RedeNeural(HIDDEN_LAYERS, NUM_INPUTS, HIDDEN_NEURONS, NUM_OUTPUTS);
+
+        startGame();
+
+        timer = new Timer(16, this); // ~60 FPS
+        timer.start();
+    }
+
+    // Novo construtor: usa rede neural externa (p/ treinamento/avaliação)
+    public Fase(RedeNeural externalNN) {
+        this.externalNN = externalNN;
+
+        setPreferredSize(new Dimension(LARGURA, ALTURA));
+        setFocusable(true);
+        setDoubleBuffered(true);
+
+        ImageIcon referencia = new ImageIcon(BG_PATH);
+        fundo = referencia.getImage();
+
+        addKeyListener(new TecladoAdapter());
+
+        // Usa a rede recebida externamente
+        nn = externalNN;
 
         startGame();
 
@@ -66,6 +118,11 @@ public class Fase extends JPanel implements ActionListener {
     private void startGame() {
         ticks = 0;
         kills = 0;
+
+        // zera estado de suavização ao reiniciar
+        nnEma[0] = nnEma[1] = nnEma[2] = 0;
+        vx = vy = 0f;
+        shootCooldown = 0;
 
         // Player
         player = new Player();
@@ -124,16 +181,24 @@ public class Fase extends JPanel implements ActionListener {
         }
     }
 
+    // === MODIFICADO: rochas também no meio do mapa ===
     private void spawnEnemy3(int count) {
         for (int i = 0; i < count; i++) {
-            // Rochas preferem os cantos
+            boolean canto = ThreadLocalRandom.current().nextBoolean(); // 50% cantos / 50% área central
+
             int x, y;
-            int corner = ThreadLocalRandom.current().nextInt(4);
-            switch (corner) {
-                case 0 -> { x = 0;            y = ThreadLocalRandom.current().nextInt(0, ALTURA/4); }
-                case 1 -> { x = LARGURA-100;  y = ThreadLocalRandom.current().nextInt(0, ALTURA/4); }
-                case 2 -> { x = 0;            y = ALTURA-100; }
-                default -> { x = LARGURA-100; y = ALTURA-100; }
+            if (canto) {
+                int corner = ThreadLocalRandom.current().nextInt(4);
+                switch (corner) {
+                    case 0 -> { x = 0;            y = ThreadLocalRandom.current().nextInt(0, ALTURA/4); }
+                    case 1 -> { x = LARGURA-100;  y = ThreadLocalRandom.current().nextInt(0, ALTURA/4); }
+                    case 2 -> { x = 0;            y = ALTURA-100; }
+                    default -> { x = LARGURA-100; y = ALTURA-100; }
+                }
+            } else {
+                // área central inteira com margens para evitar spawn cortado
+                x = ThreadLocalRandom.current().nextInt(50, LARGURA - 100);
+                y = ThreadLocalRandom.current().nextInt(30, ALTURA  - 100);
             }
             enemy3.add(new Enemy3(x, y));
         }
@@ -172,12 +237,53 @@ public class Fase extends JPanel implements ActionListener {
         gg.setColor(Color.WHITE);
         gg.drawString(String.format("Vivo: %s | Kills: %d", player.isVisivel() ? "Sim" : "Não", kills), 20, 28);
         gg.drawString(String.format("Ticks: %d", ticks), 20, 46);
+
+        // micro-ajuste de sincronização (alguns drivers)
+        Toolkit.getDefaultToolkit().sync();
     }
 
     // ===================== Atualização =====================
     @Override
     public void actionPerformed(ActionEvent e) {
         ticks++;
+
+        // Controle do player via IA (Rede Neural) - SUAVIZADO
+        if (player.isVisivel()) {
+            double[] inputs = getInputsForNN();
+            double[] raw = nn.feedForward(inputs);
+
+            // 1) Filtra as saídas (EMA)
+            nnEma[0] = nnEma[0] + EMA_ALPHA_MOVE * (raw[0] - nnEma[0]); // dx (-1..1)
+            nnEma[1] = nnEma[1] + EMA_ALPHA_MOVE * (raw[1] - nnEma[1]); // dy (-1..1)
+            nnEma[2] = nnEma[2] + EMA_ALPHA_FIRE * (raw[2] - nnEma[2]); // fire (0..1)
+
+            // 2) Velocidade alvo respeitando teto
+            float targetVx = (float)(nnEma[0] * MAX_SPEED);
+            float targetVy = (float)(nnEma[1] * MAX_SPEED);
+
+            // 3) Limita aceleração por tick (suave)
+            float stepX = clamp(targetVx - vx, -ACCEL_STEP, ACCEL_STEP);
+            float stepY = clamp(targetVy - vy, -ACCEL_STEP, ACCEL_STEP);
+            vx += stepX;
+            vy += stepY;
+
+            // 4) Entrega ao Player (arredondado para int)
+            player.setDx(Math.round(vx));
+            player.setDy(Math.round(vy));
+
+            // 5) Turbo quando velocidade resultante for alta
+            double speed = Math.hypot(vx, vy);
+            if (speed > 2.5) { // threshold ajustável
+                player.tryTurbo();
+            }
+
+            // 6) Disparo com cooldown (estável)
+            if (shootCooldown > 0) shootCooldown--;
+            if (nnEma[2] > 0.65 && shootCooldown == 0) {
+                player.shoot();
+                shootCooldown = SHOOT_COOLDOWN_TICKS;
+            }
+        }
 
         // Atualiza player
         if (player.isVisivel()) player.update();
@@ -221,6 +327,67 @@ public class Fase extends JPanel implements ActionListener {
         }
 
         repaint();
+    }
+
+    // Método para coletar entradas para a rede neural
+    private double[] getInputsForNN() {
+        double[] inputs = new double[NUM_INPUTS];
+
+        // Normaliza posições (divide por LARGURA/ALTURA para 0-1)
+        inputs[0] = player.getX() / (double) LARGURA;
+        inputs[1] = player.getY() / (double) ALTURA;
+
+        // Encontra o inimigo mais próximo de cada tipo
+        Enemy1 closestE1 = getClosestEnemy(enemy1, player.getX(), player.getY());
+        Enemy2 closestE2 = getClosestEnemy(enemy2, player.getX(), player.getY());
+        Enemy3 closestE3 = getClosestEnemy(enemy3, player.getX(), player.getY());
+
+        if (closestE1 != null) {
+            inputs[2] = closestE1.getX() / (double) LARGURA;
+            inputs[3] = closestE1.getY() / (double) ALTURA;
+        } else {
+            inputs[2] = -1; // fora da tela
+            inputs[3] = -1;
+        }
+
+        if (closestE2 != null) {
+            inputs[4] = closestE2.getX() / (double) LARGURA;
+            inputs[5] = closestE2.getY() / (double) ALTURA;
+        } else {
+            inputs[4] = -1;
+            inputs[5] = -1;
+        }
+
+        if (closestE3 != null) {
+            inputs[6] = closestE3.getX() / (double) LARGURA;
+            inputs[7] = closestE3.getY() / (double) ALTURA;
+        } else {
+            inputs[6] = -1;
+            inputs[7] = -1;
+        }
+
+        return inputs;
+    }
+
+    // Método auxiliar para encontrar o inimigo mais próximo
+    private <T extends Enemy> T getClosestEnemy(List<T> enemies, int px, int py) {
+        T closest = null;
+        double minDist = Double.MAX_VALUE;
+        for (T e : enemies) {
+            if (e.isVisivel()) {
+                double dist = Math.hypot(e.getX() - px, e.getY() - py);
+                if (dist < minDist) {
+                    minDist = dist;
+                    closest = e;
+                }
+            }
+        }
+        return closest;
+    }
+
+    // Helper p/ limitar valores
+    private static float clamp(float v, float min, float max) {
+        return Math.max(min, Math.min(max, v));
     }
 
     // ===================== Colisões =====================
@@ -307,5 +474,18 @@ public class Fase extends JPanel implements ActionListener {
     private class TecladoAdapter extends KeyAdapter {
         @Override public void keyPressed(KeyEvent e) { player.keyPressed(e); }
         @Override public void keyReleased(KeyEvent e) { player.keyReleased(e); }
+    }
+
+    // ===================== Getters úteis =====================
+    public RedeNeural getNeuralNetwork() {
+        return nn;
+    }
+
+    public int getKills() {
+        return kills;
+    }
+
+    public Player getPlayer() {
+        return player;
     }
 }

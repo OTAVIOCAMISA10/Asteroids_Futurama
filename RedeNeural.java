@@ -350,12 +350,38 @@ public class RedeNeural {
         }
     }
 
+    // Implementação da mutação: com probabilidade mutationRate, adiciona ruído gaussiano a cada peso
     public void mutate(double mutationRate) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'mutate'");
+        double[] weights = getWeightsAsVector();
+        double mutationStd = 0.1; // Desvio padrão do ruído de mutação (pode ser ajustado)
+        for (int i = 0; i < weights.length; i++) {
+            if (RAND.nextDouble() < mutationRate) {
+                weights[i] += RAND.nextGaussian() * mutationStd;
+            }
+        }
+        setWeightsFromVector(weights);
     }
+
+    // Implementação do crossover: uniform crossover entre dois pais
     public RedeNeural crossover(RedeNeural p2) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'crossover'");
+        if (this.hiddenLayerCount != p2.hiddenLayerCount ||
+            this.inputNeuronCount != p2.inputNeuronCount ||
+            this.hiddenNeuronCount != p2.hiddenNeuronCount ||
+            this.outputNeuronCount != p2.outputNeuronCount) {
+            throw new IllegalArgumentException("Redes neurais com estruturas diferentes não podem fazer crossover.");
+        }
+
+        RedeNeural child = new RedeNeural(this.hiddenLayerCount, this.inputNeuronCount, this.hiddenNeuronCount, this.outputNeuronCount);
+
+        double[] w1 = this.getWeightsAsVector();
+        double[] w2 = p2.getWeightsAsVector();
+        double[] childW = new double[w1.length];
+
+        for (int i = 0; i < w1.length; i++) {
+            childW[i] = RAND.nextBoolean() ? w1[i] : w2[i];
+        }
+
+        child.setWeightsFromVector(childW);
+        return child;
     }
 }

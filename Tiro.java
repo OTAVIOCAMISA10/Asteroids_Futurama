@@ -21,7 +21,7 @@ public class Tiro {
     }
 
     private void load() {
-        ImageIcon referencia = new ImageIcon("C:\\Users\\Zoro\\Desktop\\teste-main\\Imagem\\TIRO_ALIADO.png");
+        ImageIcon referencia = new ImageIcon("C:\\Users\\3001032\\Downloads\\Asteroids_Futurama-main\\Asteroids_Futurama-main\\Imagem\\TIRO_ALIADO.png");
         imagem  = referencia.getImage();
         largura = imagem.getWidth(null);
         altura  = imagem.getHeight(null);

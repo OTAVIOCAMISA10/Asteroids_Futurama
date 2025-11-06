@@ -24,11 +24,16 @@ public class StartScreen extends JPanel {
     }
 
     private void startGame() {
-        Fase fase = new Fase();
-        frame.setContentPane(fase);
-        frame.revalidate();
-        frame.repaint();
-        SwingUtilities.invokeLater(fase::requestFocusInWindow);
+    Trainer trainer = new Trainer();
+    trainer.train(); // Treina offline
+    RedeNeural bestNN = trainer.getBestNetwork();
+
+    Fase fase = new Fase(bestNN); // Usa a rede treinada
+    frame.setContentPane(fase);
+    frame.revalidate();
+    frame.repaint();
+    SwingUtilities.invokeLater(fase::requestFocusInWindow);
+
     }
 
     @Override

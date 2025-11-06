@@ -2,7 +2,7 @@ import java.awt.Image;
 import java.awt.Rectangle;
 import javax.swing.ImageIcon;
 
-public class Enemy3 {
+public class Enemy3 implements Enemy {
     private Image imagem;
     private int x, y;
     private int largura, altura;
