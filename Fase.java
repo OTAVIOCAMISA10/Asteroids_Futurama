@@ -280,8 +280,7 @@ public class Fase extends JPanel implements ActionListener {
         gg.setColor(new Color(0, 0, 0, 160));
         gg.fillRoundRect(HUD_X, HUD_Y, HUD_W, HUD_H, 10, 10);
         gg.setColor(Color.WHITE);
-        gg.drawString(String.format("Kills: %d", kills), 20, 28);
-        gg.drawString(String.format("Ticks: %d", ticks), 20, 46);
+        gg.drawString(String.format("Ticks: %d | Kills: %d", ticks, kills), 20, 28);
 
         float energy = player.getTurboEnergy();
         gg.setColor(Color.LIGHT_GRAY);
@@ -513,4 +512,5 @@ public class Fase extends JPanel implements ActionListener {
     public int getKills() { return kills; }
     public Player getPlayer() { return player; }
 }
+
 
