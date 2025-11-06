@@ -29,8 +29,8 @@ public class Fase extends JPanel implements ActionListener {
     private static final int RESPAWN_MAX_OFFSET = 2000;
 
     // Assets
-    private static final String SKIN_PLAYER = "C:\\Users\\3001032\\Downloads\\Asteroids_Futurama-main\\Asteroids_Futurama-main\\Imagem\\NAVE2.png";
-    private static final String SKIN_PLAYER_TURBO = "C:\\Users\\3001032\\Downloads\\Asteroids_Futurama-main\\Asteroids_Futurama-main\\Imagem\\NAVE3.png";
+    private static final String SKIN_PLAYER = "C:\\Users\\3001032\\Downloads\\Asteroids_Futurama-main\\Asteroids_Futurama-main\\Imagem\\NAVE1.png";
+    private static final String SKIN_PLAYER_TURBO = "C:\\Users\\3001032\\Downloads\\Asteroids_Futurama-main\\Asteroids_Futurama-main\\Imagem\\NAVE_TURBO.png";
     private static final String BG_PATH   = "C:\\Users\\3001032\\Downloads\\Asteroids_Futurama-main\\Asteroids_Futurama-main\\Imagem\\FUNDO.jpg";
 
     private Image fundo;
@@ -489,3 +489,4 @@ public class Fase extends JPanel implements ActionListener {
         return player;
     }
 }
+
