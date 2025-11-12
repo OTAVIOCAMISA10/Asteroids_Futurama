@@ -4,7 +4,7 @@
 
 Space Shooter (Java/Swing)
 
-Joguinho 2D estilo space shooter feito em Java + Swing. Você controla uma nave com turbo, atira em inimigos e precisa desviar de rochas. O cenário tem estrelas animadas, inimigos com respawn e um HUD simples (kills e ticks).
+Joguinho 2D estilo space shooter feito em Java + Swing com Rede Neural. Controla uma nave com turbo, atira em inimigos e precisa desviar de rochas. O cenário tem estrelas animadas, inimigos com respawn e um HUD simples (kills e ticks).
 
 🎮 Gameplay
 
