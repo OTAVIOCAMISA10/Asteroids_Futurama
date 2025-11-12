@@ -23,22 +23,3 @@ Cenário: fundo estático + estrelas em movimento.
 Respawn: quando um inimigo sai da tela/ some, nasce outro automaticamente.
 
 HUD: mostra kills e ticks (frames).
-
-
-🧱 Organização (arquivos principais)
-
-Fase.java — loop do jogo (update/desenho), spawns, colisões, HUD e input.
-
-Player.java — nave do jogador, turbo, tiro e limites de tela.
-
-Tiro.java — projétil do jogador.
-
-Enemy1.java, Enemy2.java, Enemy3.java — inimigos/obstáculos.
-
-Stars.java — estrelas de fundo.
-
-StartScreen.java (opcional) — tela inicial, se usar.
-
- Tela de Game Over e pontuação final.
-
- Sistema de waves/dificuldade progressiva.
